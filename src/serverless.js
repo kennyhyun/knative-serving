@@ -145,6 +145,7 @@ class KnativeServing extends Component {
         annotations[`autoscaling.knative.dev/${key}`] = value
       }
     }
+    let imagePullSecrets;
     return {
       apiVersion: `${svc.knativeGroup}/${svc.knativeVersion}`,
       kind: 'Service',
@@ -158,6 +159,7 @@ class KnativeServing extends Component {
             annotations
           },
           spec: {
+            imagePullSecrets,
             containers: [
               imageConfig
             ]
