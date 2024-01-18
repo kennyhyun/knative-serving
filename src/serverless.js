@@ -8,7 +8,7 @@ const defaults = {
   knativeGroup: 'serving.knative.dev',
   knativeVersion: 'v1',
   registryAddress: 'docker.io',
-  imagePullSecrets: '',                                                                                          
+  imagePullSecrets,
   namespace: 'default'
 }
 
