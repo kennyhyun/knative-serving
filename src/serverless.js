@@ -8,6 +8,7 @@ const defaults = {
   knativeGroup: 'serving.knative.dev',
   knativeVersion: 'v1',
   registryAddress: 'docker.io',
+  imagePullSecrets: '',                                                                                          
   namespace: 'default'
 }
 
@@ -145,7 +146,10 @@ class KnativeServing extends Component {
         annotations[`autoscaling.knative.dev/${key}`] = value
       }
     }
-    let imagePullSecrets;
+    const templateSpec = { containers: [ imageConfig ] }
+    if (svc.imagePullSecrets) {
+      templateSpec.imagePullSecrets = svc.imagePullSecrets
+    }
     return {
       apiVersion: `${svc.knativeGroup}/${svc.knativeVersion}`,
       kind: 'Service',
@@ -158,12 +162,7 @@ class KnativeServing extends Component {
           metadata: {
             annotations
           },
-          spec: {
-            imagePullSecrets,
-            containers: [
-              imageConfig
-            ]
-          }
+          templateSpec
         }
       }
     }
