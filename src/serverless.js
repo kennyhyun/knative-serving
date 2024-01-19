@@ -8,7 +8,6 @@ const defaults = {
   knativeGroup: 'serving.knative.dev',
   knativeVersion: 'v1',
   registryAddress: 'docker.io',
-  imagePullSecrets,
   namespace: 'default'
 }
 
@@ -108,7 +107,7 @@ class KnativeServing extends Component {
     do {
       const services = await this.listServices(k8s, config)
       if (services.response.statusCode == 200 && services.body.items) {
-        services.body.items.forEach( s => {
+        services.body.items.forEach(s => {
           const serviceName = s.metadata.name
           const serviceUrl = s.status.url
           urls.set(serviceName, serviceUrl)
@@ -142,11 +141,14 @@ class KnativeServing extends Component {
     const annotations = {}
     if (svc.autoscaler) {
       for (const key in svc.autoscaler) {
-        const value = (typeof svc.autoscaler[key] == 'number') ? svc.autoscaler[key].toString() : svc.autoscaler[key]
+        const value =
+          typeof svc.autoscaler[key] == 'number'
+            ? svc.autoscaler[key].toString()
+            : svc.autoscaler[key]
         annotations[`autoscaling.knative.dev/${key}`] = value
       }
     }
-    const templateSpec = { containers: [ imageConfig ] }
+    const templateSpec = { containers: [imageConfig] }
     if (svc.imagePullSecrets) {
       templateSpec.imagePullSecrets = svc.imagePullSecrets
     }
