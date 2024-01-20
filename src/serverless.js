@@ -29,9 +29,15 @@ class KnativeServing extends Component {
     const manifest = this.getManifest(params)
     params = Object.assign(params, { manifest })
     if (serviceExists) {
-      await this.patchService(k8sCustom, params)
+      await this.patchService(k8sCustom, params).catch((e) => {
+        console.error(JSON.stringify({ params, error: e.body }, null, 2))
+        throw new Error('Failed to patching service')
+      })
     } else {
-      await this.createService(k8sCustom, params)
+      await this.createService(k8sCustom, params).catch((e) => {
+        console.error(JSON.stringify({ params, error: e.body }, null, 2))
+        throw new Error('Failed to create service')
+      })
     }
 
     const serviceUrl = await this.getServiceUrl(k8sCustom, config)
@@ -107,7 +113,7 @@ class KnativeServing extends Component {
     do {
       const services = await this.listServices(k8s, config)
       if (services.response.statusCode == 200 && services.body.items) {
-        services.body.items.forEach(s => {
+        services.body.items.forEach((s) => {
           const serviceName = s.metadata.name
           const serviceUrl = s.status.url
           urls.set(serviceName, serviceUrl)
@@ -164,7 +170,7 @@ class KnativeServing extends Component {
           metadata: {
             annotations
           },
-          templateSpec
+          spec: templateSpec
         }
       }
     }
