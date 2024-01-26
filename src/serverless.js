@@ -8,7 +8,9 @@ const defaults = {
   knativeGroup: 'serving.knative.dev',
   knativeVersion: 'v1',
   registryAddress: 'docker.io',
-  namespace: 'default'
+  namespace: 'default',
+  env: undefined, // [{ name, key }]
+  imagePullSecrets: undefined // [{ name }]
 }
 
 class KnativeServing extends Component {
@@ -29,9 +31,15 @@ class KnativeServing extends Component {
     const manifest = this.getManifest(params)
     params = Object.assign(params, { manifest })
     if (serviceExists) {
-      await this.patchService(k8sCustom, params)
+      await this.patchService(k8sCustom, params).catch((e) => {
+        console.error(JSON.stringify({ params, error: e.body }, null, 2))
+        throw new Error('Failed to patching service')
+      })
     } else {
-      await this.createService(k8sCustom, params)
+      await this.createService(k8sCustom, params).catch((e) => {
+        console.error(JSON.stringify({ params, error: e.body }, null, 2))
+        throw new Error('Failed to create service')
+      })
     }
 
     const serviceUrl = await this.getServiceUrl(k8sCustom, config)
@@ -107,7 +115,7 @@ class KnativeServing extends Component {
     do {
       const services = await this.listServices(k8s, config)
       if (services.response.statusCode == 200 && services.body.items) {
-        services.body.items.forEach( s => {
+        services.body.items.forEach((s) => {
           const serviceName = s.metadata.name
           const serviceUrl = s.status.url
           urls.set(serviceName, serviceUrl)
@@ -137,13 +145,23 @@ class KnativeServing extends Component {
     if (svc.pullPolicy) {
       imageConfig.imagePullPolicy = svc.pullPolicy
     }
+    if (svc.env) {
+      imageConfig.env = svc.env
+    }
 
     const annotations = {}
     if (svc.autoscaler) {
       for (const key in svc.autoscaler) {
-        const value = (typeof svc.autoscaler[key] == 'number') ? svc.autoscaler[key].toString() : svc.autoscaler[key]
+        const value =
+          typeof svc.autoscaler[key] == 'number'
+            ? svc.autoscaler[key].toString()
+            : svc.autoscaler[key]
         annotations[`autoscaling.knative.dev/${key}`] = value
       }
+    }
+    const templateSpec = { containers: [imageConfig] }
+    if (svc.imagePullSecrets) {
+      templateSpec.imagePullSecrets = svc.imagePullSecrets
     }
     return {
       apiVersion: `${svc.knativeGroup}/${svc.knativeVersion}`,
@@ -157,11 +175,7 @@ class KnativeServing extends Component {
           metadata: {
             annotations
           },
-          spec: {
-            containers: [
-              imageConfig
-            ]
-          }
+          spec: templateSpec
         }
       }
     }
