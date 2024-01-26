@@ -8,7 +8,9 @@ const defaults = {
   knativeGroup: 'serving.knative.dev',
   knativeVersion: 'v1',
   registryAddress: 'docker.io',
-  namespace: 'default'
+  namespace: 'default',
+  env: undefined, // [{ name, key }]
+  imagePullSecrets: undefined // [{ name }]
 }
 
 class KnativeServing extends Component {
@@ -142,6 +144,9 @@ class KnativeServing extends Component {
     }
     if (svc.pullPolicy) {
       imageConfig.imagePullPolicy = svc.pullPolicy
+    }
+    if (svc.env) {
+      imageConfig.env = svc.env
     }
 
     const annotations = {}
